@@ -1,0 +1,8 @@
+﻿/target
+/.idea
+/.vscode
+*.iml
+/.mvn
+/.gradle
+node_modules
+.env
