@@ -24,7 +24,7 @@ public class HealthProfile {
     private Integer age;
     private String gender;
 
-    // Foreign key mới: liên kết với disease_limits.id (bệnh chính)
+    // liên kết với disease_limits.id (bệnh chính)
     @ManyToOne
     @JoinColumn(name = "disease_id", nullable = true)
     private DiseaseLimit disease;  // Bỏ nullable = true nếu bắt buộc có bệnh

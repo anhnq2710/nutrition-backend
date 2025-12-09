@@ -12,10 +12,10 @@ public class DiseaseLimit {
     private Long id;
 
     @Column(nullable = false)
-    private String diseaseName;  // Tên bệnh: "diabetes", "hypertension", "cardiovascular"
+    private String diseaseName;  // Tên bệnh
 
     @Column(nullable = false)
-    private String vietName;  // Tên tiếng Việt: "Tiểu đường", "Huyết áp cao"
+    private String vietName;  // Tên tiếng Việt
 
     @Column
     private Double sugarMax;  // Ngưỡng đường tối đa (g/ngày)
@@ -30,5 +30,5 @@ public class DiseaseLimit {
     private Double calorieMax;  // Ngưỡng calo tối đa (kcal/ngày)
 
     @Column
-    private String note;  // Ghi chú: "Tránh chè, nước ngọt"
+    private String note;  //
 }

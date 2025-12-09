@@ -41,6 +41,9 @@ public class MealHistory {
     @Column(name = "meal_date")
     private LocalDate mealDate = LocalDate.now();
 
+    @Column(name = "meal_type", length = 20)
+    private String mealType; // NEW: sáng, trưa, tối, phụ
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 }

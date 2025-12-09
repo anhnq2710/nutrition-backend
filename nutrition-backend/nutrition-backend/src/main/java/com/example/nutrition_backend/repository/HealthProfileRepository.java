@@ -6,4 +6,5 @@ import java.util.Optional;
 
 public interface HealthProfileRepository extends JpaRepository<HealthProfile, Long> {
     Optional<HealthProfile> findByUserId(String userId);
+    boolean existsByUserId(String userId);
 }

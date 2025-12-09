@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface DiseaseLimitRepository extends JpaRepository<DiseaseLimit, Long> {
     Optional<DiseaseLimit> findByDiseaseName(String diseaseName);  // Tìm theo tên bệnh
+    Optional<DiseaseLimit> findByDiseaseNameIgnoreCase(String diseaseName);
 }

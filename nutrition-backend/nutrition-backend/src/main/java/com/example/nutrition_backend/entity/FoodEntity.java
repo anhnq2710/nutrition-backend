@@ -18,7 +18,6 @@ public class FoodEntity {
     @Column(name = "english_name", length = 255)
     private String englishName;
 
-    // SỬA: Dùng columnDefinition cho DECIMAL thay precision/scale
     @Column(name = "calories", columnDefinition = "DECIMAL(8,2)")
     private Double calories;
 
@@ -54,4 +53,7 @@ public class FoodEntity {
 
     @Column(name = "note", length = 255)
     private String note;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;  // Ví dụ: "https://example.com/images/pho-bo.jpg"
 }
