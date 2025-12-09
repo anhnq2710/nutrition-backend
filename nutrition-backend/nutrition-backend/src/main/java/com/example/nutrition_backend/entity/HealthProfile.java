@@ -1,10 +1,6 @@
 package com.example.nutrition_backend.entity;
 
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -27,6 +23,11 @@ public class HealthProfile {
     private Integer heightCm;
     private Integer age;
     private String gender;
+
+    // Foreign key mới: liên kết với disease_limits.id (bệnh chính)
+    @ManyToOne
+    @JoinColumn(name = "disease_id", nullable = true)
+    private DiseaseLimit disease;  // Bỏ nullable = true nếu bắt buộc có bệnh
 
     public double getDailyCalorieLimit() {
         if (weightKg == null || age == null || heightCm == null) return 2000.0;

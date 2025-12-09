@@ -6,7 +6,10 @@ import com.example.nutrition_backend.repository.FoodRepository;
 import com.example.nutrition_backend.repository.MealHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -18,12 +21,24 @@ public class NutritionService {
     @Autowired
     private MealHistoryRepository mealRepo;
 
-    public List<FoodEntity> searchNutrition(String name, boolean addToHistory, String userId) {
+    // Giả sử bạn có NutritionAdvisorService để lấy lời khuyên
+    @Autowired
+    private NutritionAdvisorService advisorService;  // Import nếu chưa có
+
+    public Map<String, Object> searchNutrition(String name, boolean addToHistory, String userId) {
         List<FoodEntity> results = foodRepo.searchByName(name);
 
-        // Nếu có kết quả và addToHistory = true, lưu vào history (lấy món đầu tiên)
-        if (!results.isEmpty() && addToHistory && userId != null) {
-            FoodEntity food = results.get(0);
+        Map<String, Object> response = new HashMap<>();
+        response.put("foods", results);
+
+        if (results.isEmpty()) {
+            response.put("message", "Không tìm thấy món ăn!");
+            return response;
+        }
+
+        // Tự động lưu vào lịch sử nếu addToHistory = true
+        if (addToHistory && userId != null) {
+            FoodEntity food = results.get(0);  // Lấy món đầu tiên
             MealHistory meal = new MealHistory();
             meal.setUserId(userId);
             meal.setFoodName(food.getName());
@@ -34,9 +49,17 @@ public class NutritionService {
             meal.setSugar(food.getSugar());
             meal.setSodium(food.getSodium());
             mealRepo.save(meal);
+            response.put("savedToHistory", true);
         }
 
-        return results;
+        // Thêm lời khuyên cá nhân hóa nếu có userId
+        if (userId != null) {
+            FoodEntity food = results.get(0);
+            Map<String, Object> advice = advisorService.getAdviceForFood(userId, food);  // Gọi service lời khuyên
+            response.put("advice", advice);
+        }
+
+        return response;
     }
 
     public Optional<FoodEntity> getNutritionByName(String name) {

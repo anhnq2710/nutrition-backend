@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -16,10 +17,10 @@ public class NutritionController {
     private NutritionService nutritionService;
 
     @GetMapping("/nutrition/search")
-    public ResponseEntity<List<FoodEntity>> search(@RequestParam String name,
-                                                   @RequestParam(required = false, defaultValue = "false") boolean addToHistory,
-                                                   @RequestParam(required = false) String userId) {
-        List<FoodEntity> results = nutritionService.searchNutrition(name, addToHistory, userId);
+    public ResponseEntity<Map<String, Object>> search(@RequestParam String name,
+                                                      @RequestParam(required = false, defaultValue = "false") boolean addToHistory,
+                                                      @RequestParam(required = false) String userId) {
+        Map<String, Object> results = nutritionService.searchNutrition(name, addToHistory, userId);
         return ResponseEntity.ok(results);
     }
 
