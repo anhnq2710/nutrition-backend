@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface FoodRepository extends JpaRepository<FoodEntity, Long> {
     List<FoodEntity> findByNameContainingIgnoreCase(String name);
-
+    boolean existsByName(String name);
     @Query("SELECT f FROM FoodEntity f WHERE LOWER(f.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<FoodEntity> searchByName(@Param("name") String name);
 }

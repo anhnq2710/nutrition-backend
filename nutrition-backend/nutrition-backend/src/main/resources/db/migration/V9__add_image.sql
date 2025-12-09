@@ -1,0 +1,2 @@
+ALTER TABLE food_nutrition
+ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);
