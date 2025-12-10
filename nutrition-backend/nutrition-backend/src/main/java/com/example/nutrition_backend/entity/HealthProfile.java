@@ -7,36 +7,72 @@ import lombok.Data;
 @Table(name = "health_profile")
 @Data
 public class HealthProfile {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
+    @Column(name = "user_id", nullable = false, unique = true, length = 255)
     private String userId;
+
+    @Column(name = "has_diabetes")
     private boolean hasDiabetes = false;
+
+    @Column(name = "hba1c", columnDefinition = "DOUBLE PRECISION")
     private Double hba1c;
+
+    @Column(name = "has_hypertension")
     private boolean hasHypertension = false;
+
+    @Column(name = "blood_pressure_systolic")
     private Integer bloodPressureSystolic;
+
+    @Column(name = "blood_pressure_diastolic")
     private Integer bloodPressureDiastolic;
+
+    @Column(name = "has_cardiovascular")
     private boolean hasCardiovascular = false;
+
+    @Column(name = "cholesterol_total", columnDefinition = "DOUBLE PRECISION")
     private Double cholesterolTotal;
+
+    @Column(name = "weight_kg", columnDefinition = "DOUBLE PRECISION")
     private Double weightKg;
+
+    @Column(name = "height_cm")
     private Integer heightCm;
+
+    @Column(name = "age")
     private Integer age;
+
+    @Column(name = "gender", length = 20)
     private String gender;
 
-    // liên kết với disease_limits.id (bệnh chính)
-    @ManyToOne
+    // Foreign key đến bảng disease_limits
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "disease_id", nullable = true)
-    private DiseaseLimit disease;  // Bỏ nullable = true nếu bắt buộc có bệnh
+    private DiseaseLimit disease;
 
+    // Tính giới hạn calo hàng ngày (giữ nguyên logic cũ)
     public double getDailyCalorieLimit() {
-        if (weightKg == null || age == null || heightCm == null) return 2000.0;
-        double bmr = 88.362 + (13.397 * weightKg) + (4.799 * heightCm) - (5.677 * age); // Nam
-        if ("female".equalsIgnoreCase(gender)) bmr = 447.593 + (9.247 * weightKg) + (3.098 * heightCm) - (4.330 * age);
-        double limit = bmr * 1.55; // Moderate
+        if (weightKg == null || age == null || heightCm == null) {
+            return 2000.0;
+        }
+
+        double bmr;
+        if ("female".equalsIgnoreCase(gender)) {
+            bmr = 447.593 + (9.247 * weightKg) + (3.098 * heightCm) - (4.330 * age);
+        } else {
+            bmr = 88.362 + (13.397 * weightKg) + (4.799 * heightCm) - (5.677 * age);
+        }
+
+        double limit = bmr * 1.55; // Hoạt động trung bình
+
         if (hasDiabetes) limit *= 0.9;
         if (hasHypertension) limit *= 0.95;
         if (hasCardiovascular) limit *= 0.9;
-        return limit;
+
+        return Math.round(limit * 10) / 10.0; // Làm tròn 1 chữ số
     }
 }

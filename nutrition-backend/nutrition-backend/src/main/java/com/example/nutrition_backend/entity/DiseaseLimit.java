@@ -7,28 +7,34 @@ import lombok.Data;
 @Table(name = "disease_limits")
 @Data
 public class DiseaseLimit {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-    @Column(nullable = false)
-    private String diseaseName;  // Tên bệnh
+    @Column(name = "disease_name", nullable = false, unique = true, length = 100)
+    private String diseaseName;  // "diabetes", "hypertension", "cardiovascular"
 
-    @Column(nullable = false)
-    private String vietName;  // Tên tiếng Việt
+    @Column(name = "viet_name", nullable = false, length = 150)
+    private String vietName;     // "Tiểu đường", "Tăng huyết áp", "Bệnh tim mạch"
 
-    @Column
-    private Double sugarMax;  // Ngưỡng đường tối đa (g/ngày)
+    @Column(name = "sugar_max", columnDefinition = "DOUBLE PRECISION")
+    private Double sugarMax;     // g/ngày
 
-    @Column
-    private Double sodiumMax;  // Ngưỡng natri tối đa (mg/ngày)
+    @Column(name = "sodium_max", columnDefinition = "DOUBLE PRECISION")
+    private Double sodiumMax;    // mg/ngày
 
-    @Column
-    private Double fatMax;  // Ngưỡng chất béo tối đa (g/ngày)
+    @Column(name = "fat_max", columnDefinition = "DOUBLE PRECISION")
+    private Double fatMax;       // g/ngày
 
-    @Column
-    private Double calorieMax;  // Ngưỡng calo tối đa (kcal/ngày)
+    @Column(name = "calorie_max", columnDefinition = "DOUBLE PRECISION")
+    private Double calorieMax;   // kcal/ngày
 
-    @Column
-    private String note;  //
+    @Column(name = "note", length = 500)
+    private String note;         // Gợi ý: "Tránh chè, nước ngọt", "Hạn chế muối..."
+
+    // Để JPA map ngược từ HealthProfile (nếu cần)
+    // @OneToMany(mappedBy = "disease", fetch = FetchType.LAZY)
+    // private List<HealthProfile> profiles;
 }
