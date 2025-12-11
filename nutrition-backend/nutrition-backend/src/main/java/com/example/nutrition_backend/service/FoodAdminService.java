@@ -18,7 +18,7 @@ public class FoodAdminService {
     @Autowired
     private FoodRepository foodRepo;
 
-    private static final String UPLOAD_DIR = "uploads/food-images/";
+    private static final String UPLOAD_DIR = "static/food-images/";
 
     public FoodEntity addFoodWithImage(
             String name, String englishName,
