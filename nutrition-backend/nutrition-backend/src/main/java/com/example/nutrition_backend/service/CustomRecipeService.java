@@ -28,7 +28,7 @@ public class CustomRecipeService {
     private final CustomRecipeIngredientRepository recipeIngredientRepo;
     private final MealHistoryRepository mealHistoryRepo;
 
-    private static final String UPLOAD_DIR = "uploads/recipe-images/";
+    private static final String UPLOAD_DIR = "static/recipe-images/";
 
     public CustomRecipe createRecipe(String userId, CustomRecipeRequest request, MultipartFile image) throws Exception {
         Files.createDirectories(Paths.get(UPLOAD_DIR));
