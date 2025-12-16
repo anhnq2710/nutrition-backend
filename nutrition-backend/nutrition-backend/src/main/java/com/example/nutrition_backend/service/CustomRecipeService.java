@@ -55,7 +55,7 @@ public class CustomRecipeService {
 
         List<CustomRecipeIngredient> ingredients = new ArrayList<>();
         for (CustomRecipeRequest.RecipeIngredientReq item : request.getIngredients()) {
-            Ingredient ing = ingredientRepo.findById(item.getIngredientId())
+            FoodEntity ing = ingredientRepo.findById(item.getIngredientId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy nguyên liệu ID: " + item.getIngredientId()));
 
             double ratio = item.getQuantityGram() / 100.0;

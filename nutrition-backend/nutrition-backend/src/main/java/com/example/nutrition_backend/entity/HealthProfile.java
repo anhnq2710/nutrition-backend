@@ -1,5 +1,6 @@
 package com.example.nutrition_backend.entity;
 
+import com.example.nutrition_backend.dto.WeightGoal;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -54,7 +55,15 @@ public class HealthProfile {
     @JoinColumn(name = "disease_id", nullable = true)
     private DiseaseLimit disease;
 
-    // Tính giới hạn calo hàng ngày (giữ nguyên logic cũ)
+    @Column(name = "weight_goal", length = 20)
+    @Enumerated(EnumType.STRING)
+    private WeightGoal weightGoal; // "LOSE" (giảm), "GAIN" (tăng), "MAINTAIN" (giữ), null = tự động theo BMI
+
+    public void setWeightGoal(WeightGoal weightGoal) {
+        this.weightGoal = (weightGoal == null) ? WeightGoal.MAINTAIN : weightGoal;
+    }
+
+    // Tính giới hạn calo hàng ngày
     public double getDailyCalorieLimit() {
         if (weightKg == null || age == null || heightCm == null) {
             return 2000.0;

@@ -3,9 +3,7 @@ package com.example.nutrition_backend.controller;
 
 import com.example.nutrition_backend.dto.CustomRecipeRequest;
 import com.example.nutrition_backend.dto.CustomRecipeDetail;
-import com.example.nutrition_backend.dto.MealType;
 import com.example.nutrition_backend.entity.CustomRecipe;
-import com.example.nutrition_backend.entity.Ingredient;
 import com.example.nutrition_backend.entity.MealHistory;
 import com.example.nutrition_backend.service.CustomRecipeService;
 import com.fasterxml.jackson.core.type.TypeReference;

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -53,36 +54,60 @@ public class HealthProfileController {
         HealthProfile existing = profileRepo.findByUserId(input.getUserId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy profile của userId: " + input.getUserId()));
 
-        // CẬP NHẬT
-        if (input.isHasDiabetes() != existing.isHasDiabetes()) {
-            existing.setHasDiabetes(input.isHasDiabetes());
-        }
+        // CẬP NHẬT CÁC TRƯỜNG THÔNG THƯỜNG
         if (input.getHba1c() != null) existing.setHba1c(input.getHba1c());
-
-        if (input.isHasHypertension() != existing.isHasHypertension()) {
-            existing.setHasHypertension(input.isHasHypertension());
-        }
         if (input.getBloodPressureSystolic() != null) existing.setBloodPressureSystolic(input.getBloodPressureSystolic());
         if (input.getBloodPressureDiastolic() != null) existing.setBloodPressureDiastolic(input.getBloodPressureDiastolic());
-
-        if (input.isHasCardiovascular() != existing.isHasCardiovascular()) {
-            existing.setHasCardiovascular(input.isHasCardiovascular());
-        }
         if (input.getCholesterolTotal() != null) existing.setCholesterolTotal(input.getCholesterolTotal());
-
         if (input.getWeightKg() != null) existing.setWeightKg(input.getWeightKg());
         if (input.getHeightCm() != null) existing.setHeightCm(input.getHeightCm());
         if (input.getAge() != null) existing.setAge(input.getAge());
         if (input.getGender() != null && !input.getGender().isBlank()) existing.setGender(input.getGender());
 
-        // Cập nhật disease nếu có disease_id
+        // Cập nhật flags bệnh
+        existing.setHasDiabetes(input.isHasDiabetes());
+        existing.setHasHypertension(input.isHasHypertension());
+        existing.setHasCardiovascular(input.isHasCardiovascular());
+
+        // Cập nhật disease nếu có disease_id từ input
         if (input.getDisease() != null && input.getDisease().getId() != null) {
             diseaseLimitRepo.findById(input.getDisease().getId())
                     .ifPresent(existing::setDisease);
         }
 
+        // Lưu và cập nhật dailyCalorieLimit nếu cần (nếu bạn có logic tính BMR)
         HealthProfile updated = profileRepo.save(existing);
-        return ResponseEntity.ok(updated);
+
+        // === TRẢ VỀ DTO AN TOÀN – KHÔNG CÓ PROXY ===
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", updated.getUserId());
+        response.put("hasDiabetes", updated.isHasDiabetes());
+        response.put("hba1c", updated.getHba1c());
+        response.put("hasHypertension", updated.isHasHypertension());
+        response.put("bloodPressureSystolic", updated.getBloodPressureSystolic());
+        response.put("bloodPressureDiastolic", updated.getBloodPressureDiastolic());
+        response.put("hasCardiovascular", updated.isHasCardiovascular());
+        response.put("cholesterolTotal", updated.getCholesterolTotal());
+        response.put("weightKg", updated.getWeightKg());
+        response.put("heightCm", updated.getHeightCm());
+        response.put("age", updated.getAge());
+        response.put("gender", updated.getGender());
+        response.put("dailyCalorieLimit", updated.getDailyCalorieLimit());
+        response.put("weightGoal", updated.getWeightGoal() != null ? updated.getWeightGoal().name() : null);
+
+        // Nếu có disease → chỉ trả tên hoặc id, không trả toàn bộ object
+        if (updated.getDisease() != null) {
+            Map<String, Object> diseaseInfo = new HashMap<>();
+            diseaseInfo.put("id", updated.getDisease().getId());
+            diseaseInfo.put("diseaseName", updated.getDisease().getDiseaseName());
+            response.put("disease", diseaseInfo);
+        } else {
+            response.put("disease", null);
+        }
+
+        response.put("message", "Cập nhật profile thành công!");
+
+        return ResponseEntity.ok(response);
     }
 
     // PROFILE HIỂN THỊ

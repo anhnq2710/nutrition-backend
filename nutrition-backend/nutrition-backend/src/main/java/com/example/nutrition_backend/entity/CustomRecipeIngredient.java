@@ -18,7 +18,7 @@ public class CustomRecipeIngredient {
 
     @ManyToOne
     @JoinColumn(name = "ingredient_id", nullable = false)
-    private Ingredient ingredient;
+    private FoodEntity ingredient;
 
     @Column(name = "quantity_gram", nullable = false)
     private Double quantityGram;
