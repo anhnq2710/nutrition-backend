@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -89,5 +90,61 @@ public class FoodAdminService {
             return Double.parseDouble(matcher.group(1));
         }
         return 100.0; // mặc định nếu không tìm thấy
+    }
+
+    // Trong FoodAdminService.java
+    public List<FoodEntity> getAllFoods() {
+        return foodRepo.findAll();
+    }
+
+    public FoodEntity updateFoodWithImage(Long id, String name, String englishName,
+                                          Double calories, Double protein, Double fat, Double saturatedFat,
+                                          Double carbs, Double sugar, Double fiber, Double sodium,
+                                          Double potassium, Double cholesterol,
+                                          String servingSize, String note,
+                                          MultipartFile image) throws Exception {
+
+        FoodEntity existing = foodRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy món ID: " + id));
+
+        // Chỉ cập nhật nếu param không null
+        if (name != null) existing.setName(name);
+        if (englishName != null) existing.setEnglishName(englishName);
+        if (calories != null) existing.setCalories(calories);
+        if (protein != null) existing.setProtein(protein);
+        if (fat != null) existing.setFat(fat);
+        if (saturatedFat != null) existing.setSaturatedFat(saturatedFat);
+        if (carbs != null) existing.setCarbs(carbs);
+        if (sugar != null) existing.setSugar(sugar);
+        if (fiber != null) existing.setFiber(fiber);
+        if (sodium != null) existing.setSodium(sodium);
+        if (potassium != null) existing.setPotassium(potassium);
+        if (cholesterol != null) existing.setCholesterol(cholesterol);
+        if (servingSize != null) existing.setServingSize(servingSize);
+        if (note != null) existing.setNote(note);
+
+        // Upload ảnh mới nếu có
+        if (image != null && !image.isEmpty()) {
+            String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename()
+                    .replaceAll("[^a-zA-Z0-9.-]", "_");
+            Path path = Paths.get(UPLOAD_DIR + fileName);
+            Files.copy(image.getInputStream(), path);
+            existing.setImageUrl("/food-images/" + fileName);
+        }
+
+        // Tính lại serving_multiplier nếu servingSize thay đổi
+        if (servingSize != null) {
+            double multiplier = parseServingGram(servingSize) / 100.0;
+            existing.setServingMultiplier(multiplier > 0 ? multiplier : 1.0);
+        }
+
+        return foodRepo.save(existing);
+    }
+
+    public void deleteFood(Long id) {
+        if (!foodRepo.existsById(id)) {
+            throw new RuntimeException("Không tìm thấy món ID: " + id);
+        }
+        foodRepo.deleteById(id);
     }
 }
