@@ -121,21 +121,35 @@ public class FoodAdminController {
         response.put("message", message);
 
         Map<String, Object> foodMap = new HashMap<>();
+
+        // Các trường cơ bản
         foodMap.put("id", food.getId());
         foodMap.put("name", food.getName());
         foodMap.put("englishName", food.getEnglishName());
-        foodMap.put("caloriesPer100g", food.getCalories());
-        foodMap.put("proteinPer100g", food.getProtein());
-        foodMap.put("fatPer100g", food.getFat());
-        foodMap.put("carbsPer100g", food.getCarbs());
-        foodMap.put("sugarPer100g", food.getSugar());
-        foodMap.put("sodiumPer100g", food.getSodium());
         foodMap.put("servingSize", food.getServingSize());
+        foodMap.put("note", food.getNote());
         foodMap.put("imageUrl", food.getImageUrl());
+
+        // Các chỉ số dinh dưỡng per 100g
+        foodMap.put("calories", food.getCalories() != null ? food.getCalories() : 0.0);
+        foodMap.put("protein", food.getProtein() != null ? food.getProtein() : 0.0);
+        foodMap.put("fat", food.getFat() != null ? food.getFat() : 0.0);
+        foodMap.put("saturatedFat", food.getSaturatedFat() != null ? food.getSaturatedFat() : 0.0);
+        foodMap.put("carbs", food.getCarbs() != null ? food.getCarbs() : 0.0);
+        foodMap.put("sugar", food.getSugar() != null ? food.getSugar() : 0.0);
+        foodMap.put("fiber", food.getFiber() != null ? food.getFiber() : 0.0);
+        foodMap.put("sodium", food.getSodium() != null ? food.getSodium() : 0.0);
+        foodMap.put("potassium", food.getPotassium() != null ? food.getPotassium() : 0.0);
+        foodMap.put("cholesterol", food.getCholesterol() != null ? food.getCholesterol() : 0.0);
+
+        // Các trường bổ sung
+        foodMap.put("per100g", food.isPer100g());
+        foodMap.put("servingMultiplier", food.getServingMultiplier() != null ? food.getServingMultiplier() : 1.0);
 
         // Tính calo thực tế cho serving
         double multiplier = food.getServingMultiplier() != null ? food.getServingMultiplier() : 1.0;
-        foodMap.put("actualCalories", Math.round(food.getCalories() * multiplier * 10) / 10.0);
+        double actualCalories = (food.getCalories() != null ? food.getCalories() : 0.0) * multiplier;
+        foodMap.put("actualCalories", Math.round(actualCalories * 10) / 10.0);
 
         response.put("food", foodMap);
         return response;
