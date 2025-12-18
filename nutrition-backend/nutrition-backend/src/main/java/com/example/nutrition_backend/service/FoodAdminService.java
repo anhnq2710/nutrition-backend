@@ -1,20 +1,17 @@
 // src/main/java/com/example/nutrition_backend/service/FoodAdminService.java
 package com.example.nutrition_backend.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.nutrition_backend.entity.FoodEntity;
 import com.example.nutrition_backend.repository.FoodRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.UUID;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,7 +21,13 @@ public class FoodAdminService {
     @Autowired
     private FoodRepository foodRepo;
 
-    private static final String UPLOAD_DIR = "food-images/";
+    // Cấu hình Cloudinary – THAY BẰNG THÔNG TIN CỦA BẠN
+    private final Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+            "cloud_name", "dinzelnoh",
+            "api_key", "761534765551952",
+            "api_secret", "zWp_dTM2NFJv2M3vSfUum4BXDhU",
+            "secure", true                       // dùng HTTPS
+    ));
 
     public FoodEntity addFoodWithImage(
             String name, String englishName,
@@ -39,24 +42,15 @@ public class FoodAdminService {
             throw new RuntimeException("Món ăn '" + name + "' đã tồn tại!");
         }
 
-        // Upload ảnh
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
-            String originalFilename = image.getOriginalFilename();
-            String fileExtension = originalFilename != null && originalFilename.contains(".")
-                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                    : ".jpg";
-            String fileName = UUID.randomUUID() + fileExtension;
-
-            Path filePath = uploadPath.resolve(fileName);
-            Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            imageUrl = "/food-images/" + fileName;
+            try {
+                // Upload lên Cloudinary
+                Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
+                imageUrl = (String) uploadResult.get("secure_url"); // URL HTTPS từ Cloudinary
+            } catch (Exception e) {
+                throw new RuntimeException("Upload ảnh lên Cloudinary thất bại: " + e.getMessage());
+            }
         }
 
         FoodEntity food = new FoodEntity();
@@ -77,33 +71,16 @@ public class FoodAdminService {
 
         food.setServingSize(servingSize);
         food.setNote(note);
-        food.setImageUrl(imageUrl);
+        food.setImageUrl(imageUrl); // URL từ Cloudinary
 
         // Chuẩn hóa 100g
         food.setPer100g(true);
 
         // Tính serving_multiplier từ servingSize (ví dụ "1 tô (350g)" → 3.5)
         double multiplier = parseServingGram(servingSize) / 100.0;
-        food.setServingMultiplier(multiplier > 0 ? multiplier : 1.0); // mặc định 1.0 nếu không parse được
+        food.setServingMultiplier(multiplier > 0 ? multiplier : 1.0);
 
         return foodRepo.save(food);
-    }
-
-    // Hàm phụ: Parse số gram từ servingSize như "1 tô (350g)" → 350
-    private double parseServingGram(String servingSize) {
-        if (servingSize == null || servingSize.isBlank()) return 100.0; // mặc định 100g
-
-        Pattern pattern = Pattern.compile("(\\d+)\\s*g");
-        Matcher matcher = pattern.matcher(servingSize);
-        if (matcher.find()) {
-            return Double.parseDouble(matcher.group(1));
-        }
-        return 100.0; // mặc định nếu không tìm thấy
-    }
-
-    // Trong FoodAdminService.java
-    public Page<FoodEntity> getAllFoods(Pageable pageable) {
-        return foodRepo.findAll( pageable);
     }
 
     public FoodEntity updateFoodWithImage(Long id, String name, String englishName,
@@ -132,13 +109,15 @@ public class FoodAdminService {
         if (servingSize != null) existing.setServingSize(servingSize);
         if (note != null) existing.setNote(note);
 
-        // Upload ảnh mới nếu có
+        // Upload ảnh mới lên Cloudinary nếu có
         if (image != null && !image.isEmpty()) {
-            String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename()
-                    .replaceAll("[^a-zA-Z0-9.-]", "_");
-            Path path = Paths.get(UPLOAD_DIR + fileName);
-            Files.copy(image.getInputStream(), path);
-            existing.setImageUrl("/food-images/" + fileName);
+            try {
+                Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
+                String newImageUrl = (String) uploadResult.get("secure_url");
+                existing.setImageUrl(newImageUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Upload ảnh mới lên Cloudinary thất bại: " + e.getMessage());
+            }
         }
 
         // Tính lại serving_multiplier nếu servingSize thay đổi
@@ -150,10 +129,27 @@ public class FoodAdminService {
         return foodRepo.save(existing);
     }
 
+    // Giữ nguyên các method khác
+    public Page<FoodEntity> getAllFoods(Pageable pageable) {
+        return foodRepo.findAll(pageable);
+    }
+
     public void deleteFood(Long id) {
         if (!foodRepo.existsById(id)) {
             throw new RuntimeException("Không tìm thấy món ID: " + id);
         }
         foodRepo.deleteById(id);
+    }
+
+    // Hàm phụ parse gram
+    private double parseServingGram(String servingSize) {
+        if (servingSize == null || servingSize.isBlank()) return 100.0;
+
+        Pattern pattern = Pattern.compile("(\\d+)\\s*g");
+        Matcher matcher = pattern.matcher(servingSize);
+        if (matcher.find()) {
+            return Double.parseDouble(matcher.group(1));
+        }
+        return 100.0;
     }
 }
