@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/foods")
-@CrossOrigin(origins = "http://localhost:4200") // Sau này đổi thành domain FE thật
+
 public class FoodAdminController {
 
     @Autowired
@@ -121,7 +121,7 @@ public class FoodAdminController {
         foodMap.put("servingSize", food.getServingSize());
         foodMap.put("imageUrl", food.getImageUrl());
 
-        // Tính calo thực tế cho serving (rất hay khi hiển thị)
+        // Tính calo thực tế cho serving
         double multiplier = food.getServingMultiplier() != null ? food.getServingMultiplier() : 1.0;
         foodMap.put("actualCalories", Math.round(food.getCalories() * multiplier * 10) / 10.0);
 
