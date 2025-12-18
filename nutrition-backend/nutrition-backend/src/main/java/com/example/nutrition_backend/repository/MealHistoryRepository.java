@@ -21,4 +21,10 @@ public interface MealHistoryRepository extends JpaRepository<MealHistory, Long> 
     // Top món ăn
     @Query("SELECT m.foodName, COUNT(m) FROM MealHistory m GROUP BY m.foodName ORDER BY COUNT(m) DESC")
     List<Object[]> findTopFoods(int limit);
+    // Lấy lịch sử của 1 user, sắp xếp mới nhất trước
+    List<MealHistory> findByUserIdOrderByMealDateDesc(String userId);
+
+    // Lấy trong khoảng thời gian
+    List<MealHistory> findByUserIdAndMealDateBetweenOrderByMealDateDesc(
+            String userId, LocalDate startDate, LocalDate endDate);
 }
