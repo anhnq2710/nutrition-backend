@@ -23,7 +23,7 @@ INSERT INTO food_nutrition (
       ('Cơm tấm', 'Com Tam', 60.0, 3.0, 2.5, 1.0, 7.0, 0.1, 0.4, 90.0, 50.0, 8.0,
        '1 dĩa (400g)', 'Protein tốt cho gan nhiễm mỡ', 'food-images/Cơm tấm.jpg', TRUE, 4.00),
       ('Bánh xèo', 'Banh Xeo', 80.0, 3.0, 4.0, 1.4, 9.0, 0.1, 0.4, 140.0, 80.0, 12.0,
-       '1 cái (200g)', 'Calo cao – giảm nếu giảm cân', 'food-images/bánh xèo.jpg', TRUE, 2.00),
+       '1 cái (200g)', 'Calo cao – giảm nếu giảm cân', 'food-images/Bánh xèo.jpg', TRUE, 2.00),
       ('Hủ tiếu', 'Hu Tieu', 64.0, 2.4, 1.87, 0.67, 9.07, 0.53, 0.4, 133.33, 93.33, 6.0,
        '1 tô (300g)', 'Natri cao – ít nước dùng', 'food-images/Hủ tiếu.jpg', TRUE, 3.00),
       ('Chè ba màu', 'Che Ba Mau', 80.0, 1.33, 2.13, 0.8, 13.33, 8.0, 0.27, 13.33, 53.33, 2.67,
