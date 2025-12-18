@@ -17,31 +17,26 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/users")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200")
 public class UserAdminController {
 
     @Autowired
     private HealthProfileRepository profileRepo;
 
-    // Nếu bạn có entity User riêng (khuyến khích)
-    // @Autowired
-    // private UserRepository userRepo;
-
-    // 1. Lấy danh sách tất cả HealthProfile (tức là tất cả người dùng có profile)
+    // Lấy danh sách tất cả HealthProfile
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllUserProfiles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        // Tạo Pageable
+
         Pageable pageable = PageRequest.of(page, size);
 
-        // Lấy trang profile từ repo
         Page<HealthProfile> profilePage = profileRepo.findAll(pageable);
 
-        // Map sang List<Map> để trả JSON sạch
+
         List<Map<String, Object>> userList = profilePage.getContent().stream()
-                .map(this::getProfileMap)  // Dùng helper getProfileMap bạn đã có
+                .map(this::getProfileMap)
                 .collect(Collectors.toList());
 
         // Tạo response với thông tin phân trang
@@ -57,7 +52,7 @@ public class UserAdminController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. Lấy profile chi tiết của 1 user theo userId
+    // Lấy profile chi tiết của 1 user theo userId
     @GetMapping("/{userId}")
     public ResponseEntity<?> getUserProfile(@PathVariable String userId) {
         Optional<HealthProfile> profileOpt = profileRepo.findByUserId(userId);
@@ -91,13 +86,13 @@ public class UserAdminController {
         return ResponseEntity.ok(getProfileMap(profile));
     }
 
-    // 3. Sửa profile của user (admin chỉnh giúp)
+    // Sửa profile của user (admin chỉnh giúp)
     @PutMapping("/{userId}")
     public ResponseEntity<?> updateUserProfile(@PathVariable String userId, @RequestBody HealthProfile input) {
         HealthProfile existing = profileRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy profile của userId: " + userId));
 
-        // Cập nhật các trường (tương tự như trước)
+        // Cập nhật các trường
         if (input.getHba1c() != null) existing.setHba1c(input.getHba1c());
         if (input.getBloodPressureSystolic() != null) existing.setBloodPressureSystolic(input.getBloodPressureSystolic());
         if (input.getBloodPressureDiastolic() != null) existing.setBloodPressureDiastolic(input.getBloodPressureDiastolic());

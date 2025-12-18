@@ -21,7 +21,7 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-    // 1 tài khoản admin duy nhất – thay password mạnh hơn nếu muốn
+    // 1 tài khoản admin duy nhất
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails admin = User.builder()

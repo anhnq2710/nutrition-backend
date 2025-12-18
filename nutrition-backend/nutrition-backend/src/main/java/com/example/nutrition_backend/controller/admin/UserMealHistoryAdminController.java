@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/user-meals")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200")
 public class UserMealHistoryAdminController {
 
     @Autowired
@@ -51,7 +51,7 @@ public class UserMealHistoryAdminController {
 
         } catch (DateTimeParseException e) {
             return ResponseEntity.badRequest()
-                    .body(List.of()); // hoặc trả message lỗi
+                    .body(List.of()); //
         }
     }
 }

@@ -11,19 +11,19 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/disease-limits")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200")
 public class DiseaseLimitAdminController {
 
     @Autowired
     private DiseaseLimitRepository diseaseLimitRepo;
 
-    // 1. Lấy danh sách tất cả ngưỡng bệnh
+    // Lấy danh sách tất cả ngưỡng bệnh
     @GetMapping
     public ResponseEntity<List<DiseaseLimit>> getAllLimits() {
         return ResponseEntity.ok(diseaseLimitRepo.findAll());
     }
 
-    // 2. Thêm ngưỡng mới (ví dụ bệnh mới hoặc variant)
+    // Thêm ngưỡng mới (ví dụ bệnh mới hoặc variant)
     @PostMapping
     public ResponseEntity<?> addLimit(@RequestBody DiseaseLimit input) {
         // Kiểm tra trùng diseaseName
@@ -39,7 +39,7 @@ public class DiseaseLimitAdminController {
         ));
     }
 
-    // 3. Sửa ngưỡng
+    // Sửa ngưỡng
     @PutMapping("/{id}")
     public ResponseEntity<?> updateLimit(@PathVariable Long id, @RequestBody DiseaseLimit input) {
         DiseaseLimit existing = diseaseLimitRepo.findById(id)
@@ -61,7 +61,7 @@ public class DiseaseLimitAdminController {
         ));
     }
 
-    // 4. Xóa ngưỡng (cẩn thận – nếu có profile link thì không cho xóa)
+    // Xóa ngưỡng
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteLimit(@PathVariable Long id) {
         if (!diseaseLimitRepo.existsById(id)) {

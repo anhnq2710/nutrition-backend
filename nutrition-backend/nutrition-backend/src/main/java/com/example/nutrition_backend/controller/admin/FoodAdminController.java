@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/foods")
-@CrossOrigin(origins = "*") // Sau này đổi thành domain FE thật
+@CrossOrigin(origins = "http://localhost:4200") // Sau này đổi thành domain FE thật
 public class FoodAdminController {
 
     @Autowired

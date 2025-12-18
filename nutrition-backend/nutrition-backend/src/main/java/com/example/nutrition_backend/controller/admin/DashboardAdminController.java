@@ -13,7 +13,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/admin/dashboard")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200")
 public class DashboardAdminController {
 
     @Autowired
@@ -29,19 +29,19 @@ public class DashboardAdminController {
     public ResponseEntity<Map<String, Object>> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
 
-        // 1. Tổng số user có profile
+        // Tổng số user có profile
         long totalUsers = profileRepo.count();
         stats.put("totalUsers", totalUsers);
 
-        // 2. Tổng số món ăn cơ bản (food_nutrition)
+        // Tổng số món ăn cơ bản (food_nutrition)
         long totalFoods = foodRepo.count();
         stats.put("totalFoods", totalFoods);
 
-        // 3. Tổng số bữa ăn đã lưu
+        // Tổng số bữa ăn đã lưu
         long totalMeals = mealRepo.count();
         stats.put("totalMeals", totalMeals);
 
-        // 4. Thống kê bệnh lý
+        // Thống kê bệnh lý
         long diabetesCount = profileRepo.countByHasDiabetesTrue();
         long hypertensionCount = profileRepo.countByHasHypertensionTrue();
         long cardiovascularCount = profileRepo.countByHasCardiovascularTrue();
@@ -52,7 +52,7 @@ public class DashboardAdminController {
         diseaseStats.put("cardiovascular", cardiovascularCount);
         stats.put("diseaseStats", diseaseStats);
 
-        // 5. Mục tiêu cân nặng
+        // Mục tiêu cân nặng
         long loseWeightCount = profileRepo.countByWeightGoal(WeightGoal.LOSE);
         long gainWeightCount = profileRepo.countByWeightGoal(WeightGoal.GAIN);
         long maintainWeightCount = profileRepo.countByWeightGoal(WeightGoal.MAINTAIN) + profileRepo.countByWeightGoalIsNull();
@@ -63,7 +63,7 @@ public class DashboardAdminController {
         weightGoalStats.put("maintain", maintainWeightCount);
         stats.put("weightGoalStats", weightGoalStats);
 
-        // 6. Calo trung bình/ngày (7 ngày gần nhất)
+        // alo trung bình/ngày (7 ngày gần nhất)
         LocalDate today = LocalDate.now();
         LocalDate weekAgo = today.minusDays(6);
         List<Object[]> avgCaloriePerDay = mealRepo.findAvgCaloriesPerDay(weekAgo, today);
@@ -77,7 +77,7 @@ public class DashboardAdminController {
         }
         stats.put("calorieTrendLast7Days", calorieTrend);
 
-        // 7. Top 10 món ăn được ăn nhiều nhất
+        // Top 10 món ăn được ăn nhiều nhất
         List<Object[]> topFoods = mealRepo.findTopFoods(10);
         List<Map<String, Object>> topFoodList = new ArrayList<>();
         for (Object[] row : topFoods) {
@@ -88,7 +88,7 @@ public class DashboardAdminController {
         }
         stats.put("top10Foods", topFoodList);
 
-        // 8. Thông tin hệ thống
+        // Thông tin hệ thống
         stats.put("lastUpdated", LocalDate.now().toString());
         stats.put("message", "Dashboard thống kê hệ thống dinh dưỡng");
 
