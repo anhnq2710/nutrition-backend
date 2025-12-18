@@ -27,3 +27,4 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: false  # Tạm tắt validation
     out-of-order: true  # Chạy migration cũ nếu cần
+

@@ -46,8 +46,7 @@ public class CustomRecipeController {
         CustomRecipe result = recipeService.createRecipe(userId, req, image);
         return ResponseEntity.ok(Map.of(
                 "message", "Tạo công thức thành công!",
-                "recipeId", result.getId(),
-                "shareUrl", "https://yourapp.com/recipe/" + result.getId()
+                "recipeId", result.getId()
         ));
     }
 

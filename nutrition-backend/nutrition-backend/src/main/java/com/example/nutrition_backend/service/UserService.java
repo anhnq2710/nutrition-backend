@@ -1,11 +1,5 @@
 package com.example.nutrition_backend.service;
 
-import com.example.nutrition_backend.dto.UserCreateDto;
-import com.example.nutrition_backend.dto.UserDto;
-import com.example.nutrition_backend.entity.User;
-import com.example.nutrition_backend.mapper.UserMapper;
-import com.example.nutrition_backend.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 @Service
