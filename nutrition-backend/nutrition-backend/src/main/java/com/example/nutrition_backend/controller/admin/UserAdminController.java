@@ -5,10 +5,15 @@ import com.example.nutrition_backend.entity.User; // Nếu bạn có entity User
 import com.example.nutrition_backend.repository.HealthProfileRepository;
 import com.example.nutrition_backend.repository.UserRepository; // Nếu có
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -24,33 +29,30 @@ public class UserAdminController {
 
     // 1. Lấy danh sách tất cả HealthProfile (tức là tất cả người dùng có profile)
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getAllUserProfiles() {
-        List<HealthProfile> profiles = profileRepo.findAll();
+    public ResponseEntity<Map<String, Object>> getAllUserProfiles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-        List<Map<String, Object>> response = new ArrayList<>();
-        for (HealthProfile p : profiles) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("userId", p.getUserId());
-            map.put("hasDiabetes", p.isHasDiabetes());
-            map.put("hba1c", p.getHba1c());
-            map.put("hasHypertension", p.isHasHypertension());
-            map.put("bloodPressureSystolic", p.getBloodPressureSystolic());
-            map.put("bloodPressureDiastolic", p.getBloodPressureDiastolic());
-            map.put("hasCardiovascular", p.isHasCardiovascular());
-            map.put("weightKg", p.getWeightKg());
-            map.put("heightCm", p.getHeightCm());
-            map.put("age", p.getAge());
-            map.put("gender", p.getGender());
-            map.put("dailyCalorieLimit", p.getDailyCalorieLimit());
-            map.put("weightGoal", p.getWeightGoal() != null ? p.getWeightGoal().name() : "MAINTAIN");
+        // Tạo Pageable
+        Pageable pageable = PageRequest.of(page, size);
 
-            if (p.getDisease() != null) {
-                map.put("diseaseName", p.getDisease().getDiseaseName());
-                map.put("diseaseVietName", p.getDisease().getVietName());
-            }
+        // Lấy trang profile từ repo
+        Page<HealthProfile> profilePage = profileRepo.findAll(pageable);
 
-            response.add(map);
-        }
+        // Map sang List<Map> để trả JSON sạch
+        List<Map<String, Object>> userList = profilePage.getContent().stream()
+                .map(this::getProfileMap)  // Dùng helper getProfileMap bạn đã có
+                .collect(Collectors.toList());
+
+        // Tạo response với thông tin phân trang
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", userList);
+        response.put("currentPage", profilePage.getNumber());
+        response.put("pageSize", profilePage.getSize());
+        response.put("totalItems", profilePage.getTotalElements());
+        response.put("totalPages", profilePage.getTotalPages());
+        response.put("hasNext", profilePage.hasNext());
+        response.put("hasPrevious", profilePage.hasPrevious());
 
         return ResponseEntity.ok(response);
     }

@@ -4,13 +4,15 @@ package com.example.nutrition_backend.service;
 import com.example.nutrition_backend.entity.FoodEntity;
 import com.example.nutrition_backend.repository.FoodRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -93,8 +95,8 @@ public class FoodAdminService {
     }
 
     // Trong FoodAdminService.java
-    public List<FoodEntity> getAllFoods() {
-        return foodRepo.findAll();
+    public Page<FoodEntity> getAllFoods(Pageable pageable) {
+        return foodRepo.findAll( pageable);
     }
 
     public FoodEntity updateFoodWithImage(Long id, String name, String englishName,
