@@ -69,4 +69,12 @@ public class DiseaseLimitAdminController {
         diseaseLimitRepo.deleteById(id);
         return ResponseEntity.ok(Map.of("message", "Xóa ngưỡng thành công!"));
     }
+
+    // lấy bệnh theo id
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getDiseaseLimitById(@PathVariable Long id) {
+        return diseaseLimitRepo.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

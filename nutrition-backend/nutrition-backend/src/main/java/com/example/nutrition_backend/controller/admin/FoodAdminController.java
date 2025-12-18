@@ -1,6 +1,7 @@
 package com.example.nutrition_backend.controller.admin;
 
 import com.example.nutrition_backend.entity.FoodEntity;
+import com.example.nutrition_backend.repository.FoodRepository;
 import com.example.nutrition_backend.service.FoodAdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -21,7 +22,10 @@ public class FoodAdminController {
     @Autowired
     private FoodAdminService foodAdminService;
 
-    // 1. Lấy danh sách món (cơ bản + custom nếu có)
+    @Autowired
+    private FoodRepository foodRepository;
+
+    // Lấy danh sách món (cơ bản + custom nếu có)
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAllFoods(
             @RequestParam(defaultValue = "0") int page,
@@ -41,7 +45,7 @@ public class FoodAdminController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. Thêm món mới – calories là per 100g
+    // Thêm món mới – calories là per 100g
     @PostMapping
     public ResponseEntity<?> addFood(
             @RequestParam String name,
@@ -68,7 +72,7 @@ public class FoodAdminController {
         return ResponseEntity.ok(buildFoodResponse(food, "Thêm món thành công!"));
     }
 
-    // 3. Sửa món – chỉ cập nhật trường nào gửi lên
+    // Sửa món – chỉ cập nhật trường nào gửi lên
     @PutMapping("/{id}")
     public ResponseEntity<?> updateFood(
             @PathVariable Long id,
@@ -96,11 +100,19 @@ public class FoodAdminController {
         return ResponseEntity.ok(buildFoodResponse(updated, "Cập nhật món thành công!"));
     }
 
-    // 4. Xóa món
+    // Xóa món
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteFood(@PathVariable Long id) {
         foodAdminService.deleteFood(id);
         return ResponseEntity.ok(Map.of("message", "Xóa món thành công!"));
+    }
+
+    // Lấy món hteo id
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getFoodById(@PathVariable Long id) {
+        return foodRepository.findById(id)
+                .map(food -> ResponseEntity.ok(buildFoodResponse(food, "Lấy món thành công!")))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Helper: Trả JSON sạch + calo thực tế cho serving
