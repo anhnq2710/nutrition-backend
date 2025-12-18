@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,7 +24,7 @@ public class FoodAdminService {
     @Autowired
     private FoodRepository foodRepo;
 
-    private static final String UPLOAD_DIR = "src/main/resources/static/food-images/"; // ĐÚNG ĐỂ CHẠY TRONG JAR
+    private static final String UPLOAD_DIR = "food-images/";
 
     public FoodEntity addFoodWithImage(
             String name, String englishName,
@@ -39,7 +40,11 @@ public class FoodAdminService {
         }
 
         // Upload ảnh
-        Files.createDirectories(Paths.get(UPLOAD_DIR));
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
             String originalFilename = image.getOriginalFilename();
@@ -47,8 +52,10 @@ public class FoodAdminService {
                     ? originalFilename.substring(originalFilename.lastIndexOf("."))
                     : ".jpg";
             String fileName = UUID.randomUUID() + fileExtension;
-            Path path = Paths.get(UPLOAD_DIR + fileName);
-            Files.copy(image.getInputStream(), path);
+
+            Path filePath = uploadPath.resolve(fileName);
+            Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
             imageUrl = "/food-images/" + fileName;
         }
 
