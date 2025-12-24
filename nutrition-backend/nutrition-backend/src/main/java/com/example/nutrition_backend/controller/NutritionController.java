@@ -7,15 +7,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/nutrition")
 public class NutritionController {
 
     @Autowired
     private NutritionService nutritionService;
 
-    @GetMapping("/nutrition/search")
+    @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> search(
             @RequestParam String name,
             @RequestParam(required = false, defaultValue = "false") boolean suggest,
@@ -37,13 +38,13 @@ public class NutritionController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/nutrition/{name}")
+    @GetMapping("/{name}")
     public ResponseEntity<FoodEntity> getByName(@PathVariable String name) {
         Optional<FoodEntity> food = nutritionService.getNutritionByName(name);
         return food.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/nutrition/recommend")
+    @GetMapping("/recommend")
     public ResponseEntity<List<Map<String,Object>>> recommendForUser(
             @RequestParam("userId") String userId,
             @RequestParam(value = "limit", required = false, defaultValue = "5") int limit) {
@@ -53,5 +54,22 @@ public class NutritionController {
         }
         List<Map<String, Object>> list = nutritionService.recommendForUser(userId, limit);
         return ResponseEntity.ok(list);
+    }
+
+    @PostMapping("/recommend-from-list")
+    public ResponseEntity<?> recommendFromList(
+            @RequestParam String userId,
+            @RequestParam String foodNames) {
+
+        List<String> names = Arrays.stream(foodNames.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        if (names.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Danh sách món ăn rỗng"));
+        }
+
+        return ResponseEntity.ok(nutritionService.recommendFromList(userId, names));
     }
 }

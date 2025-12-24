@@ -1,15 +1,22 @@
 package com.example.nutrition_backend.service;
 
+import com.example.nutrition_backend.dto.MealDay;
+import com.example.nutrition_backend.dto.MealDayDTO;
+import com.example.nutrition_backend.dto.WeeklyMealPlanRequest;
 import com.example.nutrition_backend.dto.WeightGoal;
 import com.example.nutrition_backend.entity.DiseaseLimit;
 import com.example.nutrition_backend.entity.FoodEntity;
 import com.example.nutrition_backend.entity.HealthProfile;
+import com.example.nutrition_backend.entity.WeeklyMealPlan;
 import com.example.nutrition_backend.repository.DiseaseLimitRepository;
 import com.example.nutrition_backend.repository.FoodRepository;
 import com.example.nutrition_backend.repository.HealthProfileRepository;
+import com.example.nutrition_backend.repository.WeeklyMealPlanRepository;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,6 +28,7 @@ public class NutritionService {
     private final NutritionAdvisorService advisorService;
     private final DiseaseLimitRepository diseaseLimitRepo;
     private final HealthProfileRepository healthProfileRepo;
+    private final WeeklyMealPlanRepository weeklyMealPlanRepo;
 
     // Pattern để xóa dấu
     private static final Pattern DIACRITICS_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
@@ -28,11 +36,12 @@ public class NutritionService {
     public NutritionService(FoodRepository foodRepo,
                             NutritionAdvisorService advisorService,
                             DiseaseLimitRepository diseaseLimitRepo,
-                            HealthProfileRepository healthProfileRepo) {
+                            HealthProfileRepository healthProfileRepo, WeeklyMealPlanRepository weeklyMealPlanRepo) {
         this.foodRepo = foodRepo;
         this.advisorService = advisorService;
         this.diseaseLimitRepo = diseaseLimitRepo;
         this.healthProfileRepo = healthProfileRepo;
+        this.weeklyMealPlanRepo = weeklyMealPlanRepo;
     }
 
     // loại dấu
@@ -393,5 +402,226 @@ public class NutritionService {
             this.score = score;
             this.reasons = reasons;
         }
+    }
+
+    // RECOMMEND FROM LIST – XẾP HẠNG DANH SÁCH MÓN ĂN THEO BỆNH LÝ
+    public List<Map<String, Object>> recommendFromList(String userId, List<String> foodNames) {
+        if (userId == null || userId.isBlank()) {
+            throw new RuntimeException("userId không được để trống");
+        }
+        if (foodNames == null || foodNames.isEmpty()) {
+            throw new RuntimeException("Danh sách món ăn rỗng");
+        }
+
+        Optional<HealthProfile> opt = healthProfileRepo.findByUserId(userId);
+        if (opt.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy profile của userId: " + userId);
+        }
+        HealthProfile profile = opt.get();
+
+        WeightGoal goal = profile.getWeightGoal();
+        if (goal == null) {
+            goal = determineWeightGoalFromBMI(profile);
+        }
+
+        DiseaseLimit dl = profile.getDisease() != null ? profile.getDisease() : createTempDiseaseLimit(profile);
+
+        List<FoodEntity> allFoods = foodRepo.findAll();
+        List<ScoredFood> scoredList = new ArrayList<>();
+
+        for (String inputName : foodNames) {
+            String normInput = stripDiacritics(inputName.trim());
+
+            // Tìm món khớp tốt nhất (contains + levenshtein distance nhỏ nhất)
+            FoodEntity bestMatch = allFoods.stream()
+                    .filter(f -> stripDiacritics(f.getName()).contains(normInput))
+                    .min((f1, f2) -> {
+                        int dist1 = levenshteinDistance(normInput, stripDiacritics(f1.getName()));
+                        int dist2 = levenshteinDistance(normInput, stripDiacritics(f2.getName()));
+                        return Integer.compare(dist1, dist2);
+                    })
+                    .orElse(null);
+
+            if (bestMatch == null) {
+                scoredList.add(new ScoredFood(null, -999.0, List.of("Không tìm thấy món tương ứng: " + inputName)));
+                continue;
+            }
+
+            double score = 0.0;
+            List<String> reasons = new ArrayList<>();
+
+            double multiplier = bestMatch.getServingMultiplier() != null ? bestMatch.getServingMultiplier() : 1.0;
+            double actualCalories = bestMatch.getCalories() * multiplier;
+            double actualProtein = bestMatch.getProtein() != null ? bestMatch.getProtein() * multiplier : 0;
+            double actualCarbs = bestMatch.getCarbs() != null ? bestMatch.getCarbs() * multiplier : 0;
+            double actualFat = bestMatch.getFat() != null ? bestMatch.getFat() * multiplier : 0;
+            double actualSugar = bestMatch.getSugar() != null ? bestMatch.getSugar() * multiplier : 0;
+            double actualSodium = bestMatch.getSodium() != null ? bestMatch.getSodium() * multiplier : 0;
+            double actualFiber = bestMatch.getFiber() != null ? bestMatch.getFiber() * multiplier : 0;
+
+            // BỆNH LÝ
+            if (dl.getSugarMax() != null && actualSugar > 0) {
+                if (actualSugar <= dl.getSugarMax()) {
+                    score += 35;
+                    reasons.add("đường dưới ngưỡng – tốt cho tiểu đường");
+                } else {
+                    double excess = actualSugar - dl.getSugarMax();
+                    score -= excess * 2;
+                    reasons.add("đường vượt ngưỡng");
+                }
+            }
+            if (dl.getSodiumMax() != null && actualSodium > 0) {
+                if (actualSodium <= dl.getSodiumMax()) {
+                    score += 35;
+                    reasons.add("muối dưới ngưỡng – tốt cho huyết áp");
+                } else {
+                    double excess = actualSodium - dl.getSodiumMax();
+                    score -= excess * 0.05;
+                    reasons.add("muối vượt ngưỡng");
+                }
+            }
+            if (dl.getFatMax() != null && actualFat > 0) {
+                if (actualFat <= dl.getFatMax()) {
+                    score += 25;
+                    reasons.add("chất béo dưới ngưỡng");
+                } else {
+                    double excess = actualFat - dl.getFatMax();
+                    score -= excess * 1.5;
+                    reasons.add("chất béo vượt ngưỡng");
+                }
+            }
+
+            //  CÂN NẶNG
+            double dailyCalNeed = profile.getDailyCalorieLimit();
+            switch (goal) {
+                case LOSE -> {
+                    if (actualCalories < 200) {
+                        score += 60;
+                        reasons.add("rất ít calo – lý tưởng giảm cân");
+                    } else if (actualCalories < 300) {
+                        score += 40;
+                        reasons.add("ít calo – phù hợp giảm cân");
+                    }
+                    if (actualProtein > 15) {
+                        score += 35;
+                        reasons.add("nhiều protein – giữ cơ khi giảm mỡ");
+                    }
+                    if (actualFiber > 3) {
+                        score += 25;
+                        reasons.add("nhiều chất xơ – no lâu");
+                    }
+                }
+                case GAIN -> {
+                    if (actualCalories > 400) {
+                        score += 60;
+                        reasons.add("nhiều calo – lý tưởng tăng cân lành mạnh");
+                    } else if (actualCalories > 250) {
+                        score += 40;
+                        reasons.add("calo tốt – hỗ trợ tăng cân");
+                    }
+                    if (actualProtein > 20) {
+                        score += 45;
+                        reasons.add("nhiều protein – tăng cơ bắp");
+                    }
+                    if (actualCarbs > 30) {
+                        score += 25;
+                        reasons.add("nhiều carbs – năng lượng dồi dào");
+                    }
+                }
+                case MAINTAIN -> {
+                    double target = dailyCalNeed / 3;
+                    double diff = Math.abs(actualCalories - target);
+                    if (diff < 100) {
+                        score += 60;
+                        reasons.add("calo cân bằng – lý tưởng giữ cân");
+                    } else if (diff < 200) {
+                        score += 35;
+                        reasons.add("calo gần cân bằng");
+                    }
+                    if (actualProtein > 15 && actualProtein < 35) {
+                        score += 25;
+                        reasons.add("protein phù hợp duy trì cơ");
+                    }
+                }
+            }
+
+            // Bonus chung
+            String combined = stripDiacritics((bestMatch.getName() + " " + (bestMatch.getNote() == null ? "" : bestMatch.getNote())).toLowerCase());
+            if (combined.contains("healthy") || combined.contains("salad") || combined.contains("grilled") || combined.contains("hấp") || combined.contains("luộc")) {
+                score += 20;
+                reasons.add("món lành mạnh");
+            }
+
+            scoredList.add(new ScoredFood(bestMatch, score, reasons));
+        }
+
+        // Sắp xếp từ cao đến thấp
+        scoredList.sort((a, b) -> Double.compare(b.score, a.score));
+
+        // Trả về kết quả có xếp hạng
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (int i = 0; i < scoredList.size(); i++) {
+            ScoredFood sf = scoredList.get(i);
+            Map<String, Object> item = new HashMap<>();
+            if (sf.food != null) {
+                item.put("food", sf.food);
+                double multiplier = sf.food.getServingMultiplier() != null ? sf.food.getServingMultiplier() : 1.0;
+                item.put("actualCalories", Math.round(sf.food.getCalories() * multiplier * 10) / 10.0);
+            } else {
+                item.put("foodName", foodNames.get(i));
+            }
+            item.put("score", Math.round(sf.score * 10) / 10.0);
+            item.put("reasons", sf.reasons);
+            item.put("rank", i + 1);
+            item.put("goal", goal.getDescription());
+            result.add(item);
+        }
+
+        return result;
+    }
+
+    public WeeklyMealPlan saveWeeklyMealPlan(WeeklyMealPlanRequest request) {
+        WeeklyMealPlan plan = weeklyMealPlanRepo.findByUserIdAndStartDate(request.getUserId(), request.getStartDate())
+                .orElse(new WeeklyMealPlan());
+
+        plan.setUserId(request.getUserId());
+        plan.setStartDate(request.getStartDate());
+        plan.getDays().clear();
+
+        for (MealDayDTO dto : request.getDays()) {
+            MealDay day = new MealDay();
+            day.setDayName(dto.getDayName());
+            day.setBreakfastId(dto.getBreakfastId());
+            day.setLunchId(dto.getLunchId());
+            day.setDinnerId(dto.getDinnerId());
+            plan.getDays().add(day);
+        }
+
+        return weeklyMealPlanRepo.save(plan);
+    }
+
+    public WeeklyMealPlan getCurrentWeekPlan(String userId) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+
+        return weeklyMealPlanRepo.findByUserIdAndStartDate(userId, monday)
+                .orElseGet(() -> createEmptyPlan(userId, monday));
+    }
+
+    private WeeklyMealPlan createEmptyPlan(String userId, LocalDate monday) {
+        WeeklyMealPlan plan = new WeeklyMealPlan();
+        plan.setUserId(userId);
+        plan.setStartDate(monday);
+        // Tạo 7 ngày rỗng
+        String[] dayNames = {"Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"};
+        for (String dayName : dayNames) {
+            MealDay day = new MealDay();
+            day.setDayName(dayName);
+            day.setBreakfastId(null);
+            day.setLunchId(null);
+            day.setDinnerId(null);
+            plan.getDays().add(day);
+        }
+        return plan;
     }
 }
