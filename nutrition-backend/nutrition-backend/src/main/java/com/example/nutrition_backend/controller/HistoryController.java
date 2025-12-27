@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -47,22 +48,46 @@ public class HistoryController {
         return mealService.getHistoryByUserAndDateRange(userId, start, end);
     }
 
-    @DeleteMapping("/history/{id}")
-    public ResponseEntity<?> deleteSingleMeal(
-            @PathVariable Long id,
-            @RequestParam String userId) {
+    // HistoryController.java – SỬA METHOD XÓA MÓN (HỖ TRỢ XÓA NHIỀU ID CÙNG LÚC)
 
-        Optional<MealHistory> mealOpt = mealHistoryRepository.findById(id);
-        if (mealOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        MealHistory meal = mealOpt.get();
-        if (!meal.getUserId().equals(userId)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Không có quyền xóa món này"));
+    @DeleteMapping("/history")
+    public ResponseEntity<?> deleteMeals(
+            @RequestBody Map<String, Object> request) {
+
+        String userId = (String) request.get("userId");
+        if (userId == null || userId.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "userId là bắt buộc"));
         }
 
-        mealHistoryRepository.deleteById(id);
-        return ResponseEntity.ok(Map.of("message", "Xóa món ăn khỏi lịch sử thành công!"));
+        @SuppressWarnings("unchecked")
+        Object idsObj = request.get("ids");
+
+        if (idsObj == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Danh sách ids là bắt buộc"));
+        }
+
+        List<Long> ids;
+        if (idsObj instanceof List) {
+            ids = ((List<?>) idsObj).stream()
+                    .filter(obj -> obj instanceof Number)
+                    .map(obj -> ((Number) obj).longValue())
+                    .collect(Collectors.toList());
+        } else if (idsObj instanceof Number) {
+            // Hỗ trợ xóa 1 món
+            ids = List.of(((Number) idsObj).longValue());
+        } else {
+            return ResponseEntity.badRequest().body(Map.of("error", "ids phải là số hoặc danh sách số"));
+        }
+
+        if (ids.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Danh sách ids rỗng"));
+        }
+
+        mealService.deleteMultipleMeals(userId, ids);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Xóa thành công " + ids.size() + " món khỏi lịch sử!"
+        ));
     }
 
     @DeleteMapping("/history/meal")

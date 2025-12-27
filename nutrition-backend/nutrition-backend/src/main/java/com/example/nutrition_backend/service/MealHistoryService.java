@@ -177,4 +177,18 @@ public class MealHistoryService {
     public void deleteEntireMeal(String userId, LocalDate mealDate, String mealType) {
         mealRepo.deleteByUserIdAndMealDateAndMealType(userId, mealDate, mealType);
     }
+
+    @Transactional
+    public void deleteMultipleMeals(String userId, List<Long> ids) {
+        List<MealHistory> meals = mealRepo.findAllById(ids);
+
+        // Kiểm tra quyền: chỉ xóa món của chính user
+        for (MealHistory meal : meals) {
+            if (!meal.getUserId().equals(userId)) {
+                throw new RuntimeException("Không có quyền xóa món ID: " + meal.getId());
+            }
+        }
+
+        mealRepo.deleteAllById(ids);
+    }
 }
