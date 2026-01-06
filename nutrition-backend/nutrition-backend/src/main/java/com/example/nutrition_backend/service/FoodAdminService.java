@@ -21,7 +21,7 @@ public class FoodAdminService {
     @Autowired
     private FoodRepository foodRepo;
 
-    // Cấu hình Cloudinary – THAY BẰNG THÔNG TIN CỦA BẠN
+    // Cấu hình Cloudinary
     private final Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
             "cloud_name", "dinzelnoh",
             "api_key", "761534765551952",

@@ -53,7 +53,8 @@ public class HealthProfile {
     // Foreign key đến bảng disease_limits
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "disease_id", nullable = true)
-    private DiseaseLimit disease;
+    private DiseaseLimit
+            disease;
 
     @Column(name = "weight_goal", length = 20)
     @Enumerated(EnumType.STRING)

@@ -62,7 +62,7 @@ public class DashboardAdminController {
         weightGoalStats.put("maintain", maintainWeightCount);
         stats.put("weightGoalStats", weightGoalStats);
 
-        // alo trung bình/ngày (7 ngày gần nhất)
+        // Calo trung bình/ngày (7 ngày gần nhất)
         LocalDate today = LocalDate.now();
         LocalDate weekAgo = today.minusDays(6);
         List<Object[]> avgCaloriePerDay = mealRepo.findAvgCaloriesPerDay(weekAgo, today);
