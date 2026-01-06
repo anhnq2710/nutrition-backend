@@ -1,5 +1,6 @@
 package com.example.nutrition_backend.controller;
 
+import com.example.nutrition_backend.dto.WeightGoal;
 import com.example.nutrition_backend.entity.FoodEntity;
 import com.example.nutrition_backend.service.NutritionCalculatorService;
 import com.example.nutrition_backend.service.NutritionService;
@@ -11,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/nutrition")
 public class NutritionController {
 
     @Autowired
@@ -20,7 +21,6 @@ public class NutritionController {
     @Autowired
     private NutritionCalculatorService nutritionCalculatorService;
 
-    @GetMapping("/search")
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> search(
             @RequestParam String name,
@@ -43,13 +43,13 @@ public class NutritionController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/nutrition/{name}")
+    @GetMapping("/{name}")
     public ResponseEntity<FoodEntity> getByName(@PathVariable String name) {
         Optional<FoodEntity> food = nutritionService.getNutritionByName(name);
         return food.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/nutrition/recommend")
+    @GetMapping("/recommend")
     public ResponseEntity<List<Map<String,Object>>> recommendForUser(
             @RequestParam("userId") String userId,
             @RequestParam(value = "limit", required = false, defaultValue = "5") int limit) {
