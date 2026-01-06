@@ -10,6 +10,7 @@ import com.example.nutrition_backend.entity.DiseaseLimit;
 import com.example.nutrition_backend.repository.MealHistoryRepository;
 import com.example.nutrition_backend.repository.HealthProfileRepository;
 import com.example.nutrition_backend.repository.DiseaseLimitRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -170,5 +171,24 @@ public class MealHistoryService {
         if (startDate == null && endDate != null) startDate = endDate;
 
         return mealRepo.findByUserIdAndMealDateBetween(userId, startDate, endDate);
+    }
+
+    @Transactional
+    public void deleteEntireMeal(String userId, LocalDate mealDate, String mealType) {
+        mealRepo.deleteByUserIdAndMealDateAndMealType(userId, mealDate, mealType);
+    }
+
+    @Transactional
+    public void deleteMultipleMeals(String userId, List<Long> ids) {
+        List<MealHistory> meals = mealRepo.findAllById(ids);
+
+        // Kiểm tra quyền: chỉ xóa món của chính user
+        for (MealHistory meal : meals) {
+            if (!meal.getUserId().equals(userId)) {
+                throw new RuntimeException("Không có quyền xóa món ID: " + meal.getId());
+            }
+        }
+
+        mealRepo.deleteAllById(ids);
     }
 }

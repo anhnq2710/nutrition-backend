@@ -11,8 +11,6 @@ import java.util.List;
 public interface MealHistoryRepository extends JpaRepository<MealHistory, Long> {
     List<MealHistory> findByUserIdAndMealDateBetween(String userId, LocalDate start, LocalDate end);
     List<MealHistory> findByUserId(String userId);
-    List<MealHistory> findByUserIdOrderByMealDateDescCreatedAtDesc(String userId);
-    List<MealHistory> findByUserIdAndMealDateBetweenOrderByMealDateDescCreatedAtDesc(String userId, LocalDate from, LocalDate to);
     // method needed for daily totals
     List<MealHistory> findByUserIdAndMealDate(String userId, LocalDate mealDate);
     @Query("SELECT m.mealDate, AVG(m.calories) FROM MealHistory m WHERE m.mealDate BETWEEN :start AND :end GROUP BY m.mealDate ORDER BY m.mealDate")
@@ -27,4 +25,6 @@ public interface MealHistoryRepository extends JpaRepository<MealHistory, Long> 
     // Lấy trong khoảng thời gian
     List<MealHistory> findByUserIdAndMealDateBetweenOrderByMealDateDesc(
             String userId, LocalDate startDate, LocalDate endDate);
+
+    void deleteByUserIdAndMealDateAndMealType(String userId, LocalDate mealDate, String mealType);
 }
