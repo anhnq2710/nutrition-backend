@@ -179,12 +179,14 @@ public class NutritionAdvisorService {
     }
 
     // Thống kê (giữ nguyên – MealHistory đã lưu chỉ số thực tế)
+    // Thống kê đầy đủ tất cả chỉ số dinh dưỡng (MealHistory đã lưu thực tế)
     public StatisticsAdvice getStatisticsAdvice(String userId, LocalDate fromDate, LocalDate toDate) {
         List<MealHistory> meals = mealRepo.findByUserIdAndMealDateBetween(userId, fromDate, toDate);
         StatisticsAdvice advice = new StatisticsAdvice();
 
         if (meals.isEmpty()) {
             advice.setMessage("Không có dữ liệu trong khoảng thời gian này!");
+            advice.setPeriod("Từ " + fromDate + " đến " + toDate);
             advice.setFullIndices(Collections.emptyMap());
             advice.setThresholds(Collections.emptyMap());
             advice.setPerMetricSeverity(Collections.emptyMap());
@@ -195,95 +197,173 @@ public class NutritionAdvisorService {
         }
 
         int totalMeals = meals.size();
-        int numDays = (int) (toDate.toEpochDay() - fromDate.toEpochDay() + 1);
+        LocalDate start = fromDate.isBefore(toDate) ? fromDate : toDate;
+        LocalDate end = fromDate.isBefore(toDate) ? toDate : fromDate;
+        long numDays = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+        if (numDays <= 0) numDays = 1; // Phòng trường hợp lỗi
 
-        double avgCalories = meals.stream().mapToDouble(m -> m.getCalories() != null ? m.getCalories() : 0).average().orElse(0);
-        double avgSugar = meals.stream().mapToDouble(m -> m.getSugar() != null ? m.getSugar() : 0).average().orElse(0);
-        double avgSodium = meals.stream().mapToDouble(m -> m.getSodium() != null ? m.getSodium() : 0).average().orElse(0);
-        double avgFat = meals.stream().mapToDouble(m -> m.getFat() != null ? m.getFat() : 0).average().orElse(0);
+        // Tính tổng cho tất cả chỉ số
+        double totalCalories = meals.stream().mapToDouble(m -> m.getCalories() != null ? m.getCalories() : 0).sum();
+        double totalProtein = meals.stream().mapToDouble(m -> m.getProtein() != null ? m.getProtein() : 0).sum();
+        double totalFat = meals.stream().mapToDouble(m -> m.getFat() != null ? m.getFat() : 0).sum();
+        double totalSaturatedFat = meals.stream().mapToDouble(m -> m.getSaturatedFat() != null ? m.getSaturatedFat() : 0).sum();
+        double totalCarbs = meals.stream().mapToDouble(m -> m.getCarbs() != null ? m.getCarbs() : 0).sum();
+        double totalSugar = meals.stream().mapToDouble(m -> m.getSugar() != null ? m.getSugar() : 0).sum();
+        double totalFiber = meals.stream().mapToDouble(m -> m.getFiber() != null ? m.getFiber() : 0).sum();
+        double totalSodium = meals.stream().mapToDouble(m -> m.getSodium() != null ? m.getSodium() : 0).sum();
+        double totalPotassium = meals.stream().mapToDouble(m -> m.getPotassium() != null ? m.getPotassium() : 0).sum();
+        double totalCholesterol = meals.stream().mapToDouble(m -> m.getCholesterol() != null ? m.getCholesterol() : 0).sum();
 
-        double totalCalories = avgCalories * totalMeals;
-        double totalSugar = avgSugar * totalMeals;
-        double totalSodium = avgSodium * totalMeals;
-        double totalFat = avgFat * totalMeals;
+        // Trung bình mỗi bữa
+        double avgCalories = totalCalories / totalMeals;
+        double avgProtein = totalProtein / totalMeals;
+        double avgFat = totalFat / totalMeals;
+        double avgSaturatedFat = totalSaturatedFat / totalMeals;
+        double avgCarbs = totalCarbs / totalMeals;
+        double avgSugar = totalSugar / totalMeals;
+        double avgFiber = totalFiber / totalMeals;
+        double avgSodium = totalSodium / totalMeals;
+        double avgPotassium = totalPotassium / totalMeals;
+        double avgCholesterol = totalCholesterol / totalMeals;
 
+        // Trung bình mỗi ngày
         double caloriesPerDay = totalCalories / numDays;
-        double sugarPerDay = totalSugar / numDays;
-        double sodiumPerDay = totalSodium / numDays;
+        double proteinPerDay = totalProtein / numDays;
         double fatPerDay = totalFat / numDays;
+        double saturatedFatPerDay = totalSaturatedFat / numDays;
+        double carbsPerDay = totalCarbs / numDays;
+        double sugarPerDay = totalSugar / numDays;
+        double fiberPerDay = totalFiber / numDays;
+        double sodiumPerDay = totalSodium / numDays;
+        double potassiumPerDay = totalPotassium / numDays;
+        double cholesterolPerDay = totalCholesterol / numDays;
 
+        // Gán thông tin cơ bản
         advice.setPeriod("Từ " + fromDate + " đến " + toDate);
-        advice.setAvgCalories(avgCalories);
-        advice.setTotalCalories(totalCalories);
-        advice.setAvgSugar(avgSugar);
-        advice.setTotalSugar(totalSugar);
-        advice.setAvgSodium(avgSodium);
-        advice.setTotalSodium(totalSodium);
-        advice.setAvgFat(avgFat);
-        advice.setTotalFat(totalFat);
         advice.setTotalMeals(totalMeals);
 
+        // fullIndices – chứa tất cả chỉ số chi tiết
         Map<String, Object> fullIndices = new LinkedHashMap<>();
         fullIndices.put("totalCalories", totalCalories);
         fullIndices.put("avgCaloriesPerMeal", avgCalories);
         fullIndices.put("caloriesPerDay", caloriesPerDay);
-        fullIndices.put("totalSugar", totalSugar);
-        fullIndices.put("avgSugarPerMeal", avgSugar);
-        fullIndices.put("sugarPerDay", sugarPerDay);
-        fullIndices.put("totalSodium", totalSodium);
-        fullIndices.put("avgSodiumPerMeal", avgSodium);
-        fullIndices.put("sodiumPerDay", sodiumPerDay);
+
+        fullIndices.put("totalProtein", totalProtein);
+        fullIndices.put("avgProteinPerMeal", avgProtein);
+        fullIndices.put("proteinPerDay", proteinPerDay);
+
         fullIndices.put("totalFat", totalFat);
         fullIndices.put("avgFatPerMeal", avgFat);
         fullIndices.put("fatPerDay", fatPerDay);
 
+        fullIndices.put("totalSaturatedFat", totalSaturatedFat);
+        fullIndices.put("avgSaturatedFatPerMeal", avgSaturatedFat);
+        fullIndices.put("saturatedFatPerDay", saturatedFatPerDay);
+
+        fullIndices.put("totalCarbs", totalCarbs);
+        fullIndices.put("avgCarbsPerMeal", avgCarbs);
+        fullIndices.put("carbsPerDay", carbsPerDay);
+
+        fullIndices.put("totalSugar", totalSugar);
+        fullIndices.put("avgSugarPerMeal", avgSugar);
+        fullIndices.put("sugarPerDay", sugarPerDay);
+
+        fullIndices.put("totalFiber", totalFiber);
+        fullIndices.put("avgFiberPerMeal", avgFiber);
+        fullIndices.put("fiberPerDay", fiberPerDay);
+
+        fullIndices.put("totalSodium", totalSodium);
+        fullIndices.put("avgSodiumPerMeal", avgSodium);
+        fullIndices.put("sodiumPerDay", sodiumPerDay);
+
+        fullIndices.put("totalPotassium", totalPotassium);
+        fullIndices.put("avgPotassiumPerMeal", avgPotassium);
+        fullIndices.put("potassiumPerDay", potassiumPerDay);
+
+        fullIndices.put("totalCholesterol", totalCholesterol);
+        fullIndices.put("avgCholesterolPerMeal", avgCholesterol);
+        fullIndices.put("cholesterolPerDay", cholesterolPerDay);
+
+        advice.setFullIndices(fullIndices);
+
+        // Phần thresholds, cảnh báo, suggestions (giữ nguyên logic cũ của bạn)
         Map<String, Object> thresholds = new LinkedHashMap<>();
         Map<String, Integer> perMetricSeverity = new LinkedHashMap<>();
         List<String> warnings = new ArrayList<>();
         List<String> suggestions = new ArrayList<>();
-
-        Optional<HealthProfile> profileOpt = profileRepo.findByUserId(userId);
         int overallWarning = 0;
 
+        Optional<HealthProfile> profileOpt = profileRepo.findByUserId(userId);
         if (profileOpt.isPresent()) {
             HealthProfile profile = profileOpt.get();
             double dailyCalorieLimit = profile.getDailyCalorieLimit();
-
             double calLimitPeriod = dailyCalorieLimit * numDays;
             thresholds.put("calorieLimitPeriod", calLimitPeriod);
             int calSeverity = computeSeverity(totalCalories, calLimitPeriod);
             perMetricSeverity.put("calories", calSeverity);
             overallWarning = Math.max(overallWarning, calSeverity);
-
             if (calSeverity > 0) {
-                warnings.add("Calo vượt ngưỡng trong kỳ (" + Math.round(totalCalories) + " > " + Math.round(calLimitPeriod) + ")");
+                warnings.add("Calo vượt ngưỡng trong kỳ");
                 suggestions.add("Giảm khẩu phần hoặc tăng hoạt động thể chất.");
             }
 
-            if (profile.isHasDiabetes() || (profile.getDisease() != null && "diabetes".equalsIgnoreCase(profile.getDisease().getDiseaseName()))) {
-                Optional<DiseaseLimit> diabetesLimit = diseaseLimitRepository.findByDiseaseNameIgnoreCase("diabetes");
-                if (diabetesLimit.isPresent()) {
-                    double sugarLimitPeriod = diabetesLimit.get().getSugarMax() * numDays;
+            DiseaseLimit dl = profile.getDisease();
+            if (dl != null) {
+                // Tiểu đường (diabetes)
+                if (dl.getSugarMax() != null) {
+                    double sugarLimitPeriod = dl.getSugarMax() * numDays;
                     thresholds.put("sugarLimitPeriod", sugarLimitPeriod);
                     int sugarSeverity = computeSeverity(totalSugar, sugarLimitPeriod);
                     perMetricSeverity.put("sugar", sugarSeverity);
                     overallWarning = Math.max(overallWarning, sugarSeverity);
                     if (sugarSeverity > 0) {
-                        warnings.add("Đường vượt ngưỡng trong kỳ");
-                        suggestions.add(diabetesLimit.get().getNote());
+                        warnings.add("Tổng đường vượt ngưỡng trong kỳ (tiểu đường)");
+                        suggestions.add(dl.getNote() != null ? dl.getNote() : "Hạn chế đồ ngọt, tăng rau củ ít đường.");
                     }
                 }
-            }
 
-            // Tương tự cho hypertension và cardiovascular...
-            // (giữ nguyên phần bạn đã có)
+                // Tăng huyết áp (hypertension)
+                if (dl.getSodiumMax() != null) {
+                    double sodiumLimitPeriod = dl.getSodiumMax() * numDays;
+                    thresholds.put("sodiumLimitPeriod", sodiumLimitPeriod);
+                    int sodiumSeverity = computeSeverity(totalSodium, sodiumLimitPeriod);
+                    perMetricSeverity.put("sodium", sodiumSeverity);
+                    overallWarning = Math.max(overallWarning, sodiumSeverity);
+                    if (sodiumSeverity > 0) {
+                        warnings.add("Tổng natri/muối vượt ngưỡng trong kỳ (tăng huyết áp)");
+                        suggestions.add("Giảm mặn, tránh đồ hộp, thức ăn nhanh.");
+                    }
+                }
+
+                // Bệnh tim mạch (cardiovascular)
+                if (dl.getFatMax() != null) {
+                    double fatLimitPeriod = dl.getFatMax() * numDays;
+                    thresholds.put("fatLimitPeriod", fatLimitPeriod);
+                    int fatSeverity = computeSeverity(totalFat, fatLimitPeriod);
+                    perMetricSeverity.put("fat", fatSeverity);
+                    overallWarning = Math.max(overallWarning, fatSeverity);
+                    if (fatSeverity > 0) {
+                        warnings.add("Tổng chất béo vượt ngưỡng trong kỳ (bệnh tim mạch)");
+                        suggestions.add("Giảm đồ chiên xào, ưu tiên chất béo lành mạnh từ cá, hạt.");
+                    }
+                }
+
+                // Cảnh báo ngược (thiếu chất tốt)
+                if (totalFiber < 25 * numDays) { // Khuyến nghị trung bình 25-30g/ngày
+                    warnings.add("Thiếu chất xơ trong kỳ");
+                    suggestions.add("Tăng rau xanh, trái cây, ngũ cốc nguyên cám.");
+                }
+                if (totalPotassium < 3000 * numDays) { // Khuyến nghị ~3500mg/ngày
+                    warnings.add("Thiếu kali trong kỳ");
+                    suggestions.add("Ăn chuối, khoai lang, rau bina để cân bằng natri.");
+                }
+            }
         }
 
         if (warnings.isEmpty()) {
             suggestions.add("Chế độ ăn cân bằng – tiếp tục duy trì!");
         }
 
-        advice.setFullIndices(fullIndices);
         advice.setThresholds(thresholds);
         advice.setPerMetricSeverity(perMetricSeverity);
         advice.setWarnings(warnings);

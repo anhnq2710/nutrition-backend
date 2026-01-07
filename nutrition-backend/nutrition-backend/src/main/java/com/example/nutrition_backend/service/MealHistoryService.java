@@ -53,7 +53,7 @@ public class MealHistoryService {
         meal.setSugar(req.getSugar());
         meal.setSodium(req.getSodium());
         meal.setMealDate(mealDate);
-        meal.setMealType(mealType.name());
+        meal.setMealType(MealType.valueOf(mealType.name()));
 
         MealHistory saved = mealRepo.save(meal);
 
@@ -79,7 +79,7 @@ public class MealHistoryService {
         meal.setSugar(food.getSugar() != null ? food.getSugar() * multiplier : null);
         meal.setSodium(food.getSodium() != null ? food.getSodium() * multiplier : null);
         meal.setMealDate(mealDate);
-        meal.setMealType(type.name());
+        meal.setMealType(MealType.valueOf(type.name()));
 
         MealHistory saved = mealRepo.save(meal);
 

@@ -128,7 +128,7 @@ public class CustomRecipeService {
             };
         }
 
-        meal.setMealType(finalMealType);
+        meal.setMealType(MealType.valueOf(finalMealType));
 
         return mealHistoryRepo.save(meal);
     }
