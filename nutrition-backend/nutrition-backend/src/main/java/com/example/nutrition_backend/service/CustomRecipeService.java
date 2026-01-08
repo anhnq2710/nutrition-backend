@@ -1,6 +1,8 @@
 // src/main/java/com/example/nutrition_backend/service/CustomRecipeService.java
 package com.example.nutrition_backend.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.nutrition_backend.dto.CustomRecipeRequest;
 import com.example.nutrition_backend.dto.CustomRecipeDetail;
 import com.example.nutrition_backend.dto.MealType;
@@ -17,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -27,17 +30,23 @@ public class CustomRecipeService {
     private final IngredientRepository ingredientRepo;
     private final CustomRecipeIngredientRepository recipeIngredientRepo;
     private final MealHistoryRepository mealHistoryRepo;
-
-    private static final String UPLOAD_DIR = "static/recipe-images/";
+    private final Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+            "cloud_name", "dinzelnoh",
+            "api_key", "761534765551952",
+            "api_secret", "zWp_dTM2NFJv2M3vSfUum4BXDhU",
+            "secure", true
+    ));
 
     public CustomRecipe createRecipe(String userId, CustomRecipeRequest request, MultipartFile image) throws Exception {
-        Files.createDirectories(Paths.get(UPLOAD_DIR));
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
-            String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-            Path path = Paths.get(UPLOAD_DIR + fileName);
-            Files.copy(image.getInputStream(), path);
-            imageUrl = "/recipe-images/" + fileName;
+            try {
+                // Upload lên Cloudinary
+                Map uploadResult = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
+                imageUrl = (String) uploadResult.get("secure_url"); // URL HTTPS từ Cloudinary
+            } catch (Exception e) {
+                throw new RuntimeException("Upload ảnh công thức lên Cloudinary thất bại: " + e.getMessage());
+            }
         }
 
         CustomRecipe recipe = new CustomRecipe();
@@ -46,7 +55,7 @@ public class CustomRecipeService {
         recipe.setDescription(request.getDescription());
         recipe.setServings(request.getServings());
         recipe.setPublic(request.isPublic());
-        recipe.setImageUrl(imageUrl);
+        recipe.setImageUrl(imageUrl); // URL từ Cloudinary
 
         // Tính tổng dinh dưỡng
         double totalCal = 0, totalPro = 0, totalFat = 0, totalSatFat = 0;
